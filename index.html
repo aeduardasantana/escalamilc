@@ -1,0 +1,687 @@
+<html><head><base href="https://www.milc-libras.org/agenda/" target="_blank"><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>MILC - Agenda de Intérpretes de Libras</title><style>
+    body {
+        font-family: Arial, sans-serif;
+        line-height: 1.6;
+        color: #333;
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+        background-color: #f4f4f4;
+    }
+    header {
+        background-color: #1a5f7a;
+        color: #fff;
+        text-align: center;
+        padding: 1rem;
+        margin-bottom: 2rem;
+    }
+    h1 {
+        margin: 0;
+        font-size: 1.8em;
+    }
+    header h2 {
+        margin: 0.5rem 0 0;
+        font-size: 1.2em;
+        font-weight: normal;
+    }
+    .control-buttons {
+        text-align: center;
+        margin-bottom: 2rem;
+        padding: 1rem;
+        background-color: #f0f0f0;
+        border-radius: 0 0 8px 8px;
+    }
+    .control-buttons button {
+        margin: 0 0.5rem;
+    }
+    #servo-container, #local-container {
+        margin-top: 1rem;
+        background-color: #fff;
+        border-radius: 8px;
+        padding: 1rem;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    #servo-form, #local-form {
+        display: flex;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+    }
+    #servo-nome, #local-nome {
+        flex-grow: 1;
+        padding: 0.5rem;
+    }
+    #servo-list, #local-list {
+        list-style-type: none;
+        padding: 0;
+    }
+    .servo-item, .local-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.5rem;
+        background-color: #e6f3ff;
+        margin-bottom: 0.5rem;
+        border-radius: 4px;
+    }
+    #calendario {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-around;
+        gap: 1rem;
+    }
+    .mes {
+        background-color: #fff;
+        border-radius: 8px;
+        padding: 1rem;
+        width: calc(33.33% - 1rem);
+        min-width: 250px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        cursor: pointer;
+        transition: transform 0.3s ease;
+    }
+    .mes:hover {
+        transform: translateY(-5px);
+    }
+    .mes h2 {
+        margin-top: 0;
+        color: #1a5f7a;
+    }
+    .eventos {
+        display: none;
+    }
+    .evento {
+        background-color: #e6f3ff;
+        border-radius: 4px;
+        padding: 0.5rem;
+        margin-bottom: 0.5rem;
+    }
+    .evento h3 {
+        margin: 0;
+        color: #1a5f7a;
+    }
+    .evento p {
+        margin: 0.25rem 0;
+    }
+    .botoes {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 0.5rem;
+    }
+    button {
+        background-color: #1a5f7a;
+        color: #fff;
+        border: none;
+        padding: 0.5rem 1rem;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+    }
+    button:hover {
+        background-color: #13455a;
+    }
+    select {
+        width: 100%;
+        padding: 0.5rem;
+        margin-bottom: 0.5rem;
+    }
+    @media (max-width: 768px) {
+        .mes {
+            width: calc(50% - 1rem);
+        }
+    }
+    @media (max-width: 480px) {
+        .mes {
+            width: 100%;
+        }
+    }
+    .mes-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .mes-buttons {
+        display: flex;
+        gap: 0.5rem;
+    }
+    .expand-btn, .hide-btn, .apagar-mes-btn {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.9rem;
+    }
+    .add-month-btn {
+        display: block;
+        margin: 20px auto;
+        padding: 10px 20px;
+        font-size: 1.1em;
+        background-color: #1a5f7a;
+        color: #fff;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+    }
+    .add-month-btn:hover {
+        background-color: #13455a;
+    }
+    @keyframes blink {
+        0% { background-color: #e6f3ff; }
+        50% { background-color: #ffcccc; }
+        100% { background-color: #e6f3ff; }
+    }
+    .evento.pendente {
+        animation: blink 2s linear infinite;
+    }
+</style></head><body>
+    <header>
+        <h1>MILC - Ministério de Intérpretes de LIBRAS Católicos</h1>
+        <h2>Escala de Servos</h2>
+    </header>
+    <div class="control-buttons">
+        <button id="toggle-edit-btn">Ativar Edição de Escala</button>
+        <button id="toggle-admin-btn">Ativar ADM</button>
+        <button id="version-control-btn" style="display: none;">Controle de Versão</button>
+    </div>
+    <div id="servo-container">
+        <h2>Lista de Servos</h2>
+        <form id="servo-form">
+            <input type="text" id="servo-nome" placeholder="Digite o nome do servo">
+            <button type="submit">Adicionar</button>
+        </form>
+        <ul id="servo-list"></ul>
+    </div>
+    <div id="local-container">
+        <h2>Lista de Locais</h2>
+        <form id="local-form">
+            <input type="text" id="local-nome" placeholder="Digite o nome do local">
+            <button type="submit">Adicionar</button>
+        </form>
+        <ul id="local-list"></ul>
+    </div>
+    <main id="calendario"></main>
+    <button id="add-month-btn" class="add-month-btn">Adicionar Próximo Mês</button>
+    <script>
+        const meses = [
+            "Outubro 2024", "Novembro 2024", "Dezembro 2024"
+        ];
+
+        let servos = ["PENDENTE"];
+        const calendario = document.getElementById('calendario');
+        const servoForm = document.getElementById('servo-form');
+        const servoInput = document.getElementById('servo-nome');
+        const servoList = document.getElementById('servo-list');
+        const localForm = document.getElementById('local-form');
+        const localInput = document.getElementById('local-nome');
+        const localList = document.getElementById('local-list');
+        let locais = [];
+        let editingEnabled = false;
+        let adminEnabled = false;
+        let siteVersions = [];
+        const MAX_VERSIONS = 5;
+
+        const toggleEditBtn = document.getElementById('toggle-edit-btn');
+        const toggleAdminBtn = document.getElementById('toggle-admin-btn');
+        const versionControlBtn = document.getElementById('version-control-btn');
+
+        toggleEditBtn.addEventListener('click', toggleEditing);
+        toggleAdminBtn.addEventListener('click', toggleAdmin);
+        versionControlBtn.addEventListener('click', showVersionHistory);
+
+        function toggleEditing() {
+            if (!editingEnabled) {
+                const password = prompt("Digite a senha para ativar a edição:");
+                if (password === "490") {
+                    editingEnabled = true;
+                    toggleEditBtn.textContent = "Desativar Edição de Escala";
+                    alert("Edição de escala ativada.");
+                } else {
+                    alert("Senha incorreta.");
+                }
+            } else {
+                editingEnabled = false;
+                toggleEditBtn.textContent = "Ativar Edição de Escala";
+                alert("Edição de escala desativada.");
+            }
+            updateEditingState();
+        }
+
+        function toggleAdmin() {
+            if (!adminEnabled) {
+                const password = prompt("Digite a senha para ativar o modo ADM:");
+                if (password === "jedidiah") {
+                    adminEnabled = true;
+                    toggleAdminBtn.textContent = "Desativar ADM";
+                    versionControlBtn.style.display = 'inline-block';
+                    alert("Modo ADM ativado.");
+                    const savedVersions = localStorage.getItem('siteVersions');
+                    if (savedVersions) {
+                        siteVersions = JSON.parse(savedVersions);
+                    }
+                } else {
+                    alert("Senha incorreta.");
+                }
+            } else {
+                adminEnabled = false;
+                toggleAdminBtn.textContent = "Ativar ADM";
+                versionControlBtn.style.display = 'none';
+                alert("Modo ADM desativado.");
+            }
+            updateEditingState();
+        }
+
+        function updateEditingState() {
+            const editableElements = document.querySelectorAll('input, select, button:not(.expand-btn):not(.hide-btn)');
+            editableElements.forEach(el => {
+                if (el.id !== 'toggle-edit-btn' && el.id !== 'toggle-admin-btn') {
+                    el.disabled = !(editingEnabled || adminEnabled);
+                }
+            });
+
+            const additionButtons = document.querySelectorAll('.add-missa-btn, .add-outro-btn, #add-month-btn');
+            additionButtons.forEach(btn => {
+                btn.style.display = (editingEnabled || adminEnabled) ? 'block' : 'none';
+            });
+
+            const apagarMesButtons = document.querySelectorAll('.apagar-mes-btn');
+            apagarMesButtons.forEach(btn => {
+                btn.style.display = adminEnabled ? 'inline-block' : 'none';
+            });
+        }
+
+        function checkPermission(action) {
+            if (editingEnabled || adminEnabled) {
+                return true;
+            } else {
+                alert("Você não tem permissão para realizar esta ação. Ative o modo de edição ou ADM.");
+                return false;
+            }
+        }
+
+        servoForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const nome = servoInput.value.trim();
+            if (nome) {
+                adicionarServo(nome);
+                servoInput.value = '';
+            }
+        });
+
+        localForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const nome = localInput.value.trim();
+            if (nome) {
+                adicionarLocal(nome);
+                localInput.value = '';
+            }
+        });
+
+        function adicionarServo(nome) {
+            if (!checkPermission('adicionar')) return;
+            const servoItem = document.createElement('li');
+            servoItem.className = 'servo-item';
+            servoItem.innerHTML = `
+                <span>${nome}</span>
+                <div>
+                    <button onclick="editarServo(this)">Editar</button>
+                </div>
+            `;
+            servoList.appendChild(servoItem);
+            servos.push(nome);
+            atualizarSelectServos();
+            saveCurrentVersion();
+        }
+
+        function adicionarLocal(nome) {
+            if (!checkPermission('adicionar')) return;
+            const localItem = document.createElement('li');
+            localItem.className = 'local-item';
+            localItem.innerHTML = `
+                <span>${nome}</span>
+                <div>
+                    <button onclick="editarLocal(this)">Editar</button>
+                </div>
+            `;
+            localList.appendChild(localItem);
+            locais.push(nome);
+            atualizarSelectLocais();
+            saveCurrentVersion();
+        }
+
+        function editarServo(button) {
+            if (!checkPermission('editar')) return;
+            const servoItem = button.closest('.servo-item');
+            const span = servoItem.querySelector('span');
+            const novoNome = prompt('Editar nome do servo:', span.textContent);
+            if (novoNome !== null && novoNome.trim() !== '') {
+                span.textContent = novoNome.trim();
+                const index = servos.indexOf(span.textContent);
+                if (index !== -1) {
+                    servos[index] = novoNome.trim();
+                }
+                atualizarSelectServos();
+                saveCurrentVersion();
+            }
+        }
+
+        function editarLocal(button) {
+            if (!checkPermission('editar')) return;
+            const localItem = button.closest('.local-item');
+            const span = localItem.querySelector('span');
+            const novoNome = prompt('Editar nome do local:', span.textContent);
+            if (novoNome !== null && novoNome.trim() !== '') {
+                span.textContent = novoNome.trim();
+                const index = locais.indexOf(span.textContent);
+                if (index !== -1) {
+                    locais[index] = novoNome.trim();
+                }
+                atualizarSelectLocais();
+                saveCurrentVersion();
+            }
+        }
+
+        function criarEvento(tipo) {
+            if (!checkPermission('criar')) return;
+            const data = new Date().toISOString().split('T')[0];
+            const evento = document.createElement('div');
+            evento.className = 'evento';
+            
+            if (tipo === 'missa') {
+                evento.innerHTML = `
+                    <h3>Missa</h3>
+                    <p>Servo: <select class="servo-select"></select></p>
+                    <p><button onclick="adicionarNovoServo(this)">Adicionar Novo Servo</button></p>
+                    <p>Data: ${data}</p>
+                    <p>Local: <select class="local-select"></select></p>
+                    <p>Hora: 10:00</p>
+                    <div class="botoes">
+                        <button onclick="salvarEvento(this)">Salvar</button>
+                        <button onclick="editarEvento(this)">Editar</button>
+                        <button onclick="cancelarEvento(this)">Cancelar</button>
+                    </div>
+                `;
+            } else {
+                evento.innerHTML = `
+                    <h3>Outro Evento</h3>
+                    <p>Servo: <select class="servo-select"></select></p>
+                    <p><button onclick="adicionarNovoServo(this)">Adicionar Novo Servo</button></p>
+                    <p>Data: <input type="date" value="${data}"></p>
+                    <p>Local: <select class="local-select"></select></p>
+                    <p>Evento: <input type="text"></p>
+                    <p>Hora: <input type="time"></p>
+                    <div class="botoes">
+                        <button onclick="salvarEvento(this)">Salvar</button>
+                        <button onclick="editarEvento(this)">Editar</button>
+                        <button onclick="cancelarEvento(this)">Cancelar</button>
+                    </div>
+                `;
+            }
+
+            const mesElement = this.closest('.mes');
+            const eventos = mesElement.querySelector('.eventos');
+            
+            eventos.appendChild(evento);
+            atualizarSelectServos();
+            atualizarSelectLocais();
+            saveCurrentVersion();
+
+            if (eventos.children.length === 3) {
+                const proximoMes = mesElement.nextElementSibling;
+                if (proximoMes && proximoMes.classList.contains('mes')) {
+                    const expandBtn = proximoMes.querySelector('.expand-btn');
+                    expandBtn.click();
+                }
+            }
+        }
+
+        function editarEvento(button) {
+            if (!checkPermission('editar')) return;
+            const evento = button.closest('.evento');
+            evento.querySelectorAll('p').forEach(p => {
+                if (!p.querySelector('select') && !p.querySelector('button')) {
+                    const texto = p.textContent;
+                    const [chave, valor] = texto.split(': ');
+                    if (chave === 'Local') {
+                        p.innerHTML = `${chave}: <select class="local-select"></select>`;
+                        atualizarSelectLocais();
+                        const select = p.querySelector('select');
+                        select.value = valor;
+                    } else if (chave === 'Servo') {
+                        p.innerHTML = `${chave}: <select class="servo-select"></select>`;
+                        atualizarSelectServos();
+                        const select = p.querySelector('select');
+                        select.value = valor;
+                        select.dispatchEvent(new Event('change'));
+                    } else {
+                        p.innerHTML = `${chave}: <input type="text" value="${valor}">`;
+                    }
+                }
+            });
+            button.textContent = 'Salvar';
+            button.onclick = () => salvarEvento(button);
+        }
+
+        function adicionarNovoServo(button) {
+            if (!checkPermission('adicionar')) return;
+            const evento = button.closest('.evento');
+            const novoServoP = document.createElement('p');
+            novoServoP.innerHTML = `
+                Servo: <select class="servo-select"></select>
+                <button onclick="cancelarNovoServo(this)">Cancelar</button>
+            `;
+            button.parentNode.insertAdjacentElement('beforebegin', novoServoP);
+            atualizarSelectServos();
+        }
+
+        function cancelarNovoServo(button) {
+            if (!checkPermission('cancelar')) return;
+            const servoP = button.closest('p');
+            servoP.remove();
+        }
+
+        function salvarEvento(button) {
+            if (!checkPermission('salvar')) return;
+            const evento = button.closest('.evento');
+            let isPendente = false;
+            evento.querySelectorAll('input, select').forEach(input => {
+                const p = input.parentNode;
+                p.textContent = `${p.textContent.split(':')[0]}: ${input.value}`;
+                if (input.classList.contains('servo-select') && input.value === 'PENDENTE') {
+                    isPendente = true;
+                }
+            });
+            if (isPendente) {
+                evento.classList.add('pendente');
+            } else {
+                evento.classList.remove('pendente');
+            }
+            button.textContent = 'Editar';
+            button.onclick = () => editarEvento(button);
+            saveCurrentVersion();
+        }
+
+        function criarMes(mes) {
+            const mesElement = document.createElement('div');
+            mesElement.className = 'mes';
+            mesElement.innerHTML = `
+                <div class="mes-header">
+                    <h2>${mes}</h2>
+                    <div class="mes-buttons">
+                        <button class="expand-btn">Expandir</button>
+                        <button class="hide-btn" style="display: none;">Esconder</button>
+                        <button class="apagar-mes-btn" style="display: none;">Apagar</button>
+                    </div>
+                </div>
+                <div class="eventos" style="display: none;">
+                    <button class="add-missa-btn">Adicionar Missa</button>
+                    <button class="add-outro-btn">Adicionar Outro Evento</button>
+                </div>
+            `;
+            return mesElement;
+        }
+
+        function atualizarSelectServos() {
+            const servoSelects = document.querySelectorAll('.servo-select');
+            servoSelects.forEach(select => {
+                select.innerHTML = '';
+                servos.forEach(servo => {
+                    const option = document.createElement('option');
+                    option.value = servo;
+                    option.textContent = servo;
+                    select.appendChild(option);
+                });
+                select.addEventListener('change', function() {
+                    const evento = this.closest('.evento');
+                    if (this.value === 'PENDENTE') {
+                        evento.classList.add('pendente');
+                    } else {
+                        evento.classList.remove('pendente');
+                    }
+                });
+            });
+        }
+
+        function atualizarSelectLocais() {
+            const localSelects = document.querySelectorAll('.local-select');
+            localSelects.forEach(select => {
+                select.innerHTML = '';
+                locais.forEach(local => {
+                    const option = document.createElement('option');
+                    option.value = local;
+                    option.textContent = local;
+                    select.appendChild(option);
+                });
+            });
+        }
+
+        meses.forEach(mes => {
+            const mesElement = criarMes(mes);
+            calendario.appendChild(mesElement);
+
+            const expandBtn = mesElement.querySelector('.expand-btn');
+            const hideBtn = mesElement.querySelector('.hide-btn');
+            const eventos = mesElement.querySelector('.eventos');
+            const addMissaBtn = mesElement.querySelector('.add-missa-btn');
+            const addOutroBtn = mesElement.querySelector('.add-outro-btn');
+            const apagarBtn = mesElement.querySelector('.apagar-mes-btn');
+
+            expandBtn.addEventListener('click', () => {
+                eventos.style.display = 'block';
+                expandBtn.style.display = 'none';
+                hideBtn.style.display = 'inline-block';
+            });
+
+            hideBtn.addEventListener('click', () => {
+                eventos.style.display = 'none';
+                expandBtn.style.display = 'inline-block';
+                hideBtn.style.display = 'none';
+            });
+
+            addMissaBtn.addEventListener('click', function() { criarEvento.call(this, 'missa'); });
+            addOutroBtn.addEventListener('click', function() { criarEvento.call(this, 'outro'); });
+            apagarBtn.addEventListener('click', function() { apagarMes(this); });
+        });
+
+        function cancelarEvento(button) {
+            if (!checkPermission('cancelar')) return;
+            const evento = button.closest('.evento');
+            evento.remove();
+            saveCurrentVersion();
+        }
+
+        function adicionarNovoMes() {
+            if (!checkPermission('adicionar')) return;
+            const ultimoMes = meses[meses.length - 1];
+            const [mes, ano] = ultimoMes.split(' ');
+            const mesesOrdem = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+            const indexMesAtual = mesesOrdem.indexOf(mes);
+            let novoMes, novoAno;
+
+            if (indexMesAtual === 11) {
+                novoMes = mesesOrdem[0];
+                novoAno = parseInt(ano) + 1;
+            } else {
+                novoMes = mesesOrdem[indexMesAtual + 1];
+                novoAno = parseInt(ano);
+            }
+
+            const novoMesCompleto = `${novoMes} ${novoAno}`;
+            meses.push(novoMesCompleto);
+
+            const mesElement = criarMes(novoMesCompleto);
+            calendario.appendChild(mesElement);
+            saveCurrentVersion();
+            updateEditingState();
+        }
+
+        function saveCurrentVersion() {
+            const currentState = {
+                servos: [...servos],
+                locais: [...locais],
+                calendario: calendario.innerHTML,
+                timestamp: new Date().toLocaleString()
+            };
+            siteVersions.unshift(currentState);
+            if (siteVersions.length > MAX_VERSIONS) {
+                siteVersions.pop();
+            }
+            localStorage.setItem('siteVersions', JSON.stringify(siteVersions));
+        }
+
+        function showVersionHistory() {
+            const versionList = siteVersions.map((version, index) => 
+                `<li>
+                    Versão ${index + 1} (${version.timestamp})
+                    <button onclick="viewVersion(${index})">Visualizar</button>
+                    <button onclick="restoreVersion(${index})">Restaurar</button>
+                </li>`
+            ).join('');
+
+            const versionHistoryHTML = `
+                <div id="version-history" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border: 1px solid black; z-index: 1000; max-height: 80vh; overflow-y: auto;">
+                    <h3>Histórico de Versões</h3>
+                    <ul>${versionList}</ul>
+                    <button onclick="document.getElementById('version-history').remove()">Fechar</button>
+                </div>
+            `;
+
+            document.body.insertAdjacentHTML('beforeend', versionHistoryHTML);
+        }
+
+        function viewVersion(index) {
+            const version = siteVersions[index];
+            const versionDetails = `
+                <div id="version-details" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border: 1px solid black; z-index: 1001; max-height: 80vh; overflow-y: auto; width: 80vw;">
+                    <h3>Detalhes da Versão ${index + 1} (${version.timestamp})</h3>
+                    <h4>Servos:</h4>
+                    <ul>${version.servos.map(servo => `<li>${servo}</li>`).join('')}</ul>
+                    <h4>Locais:</h4>
+                    <ul>${version.locais.map(local => `<li>${local}</li>`).join('')}</ul>
+                    <h4>Calendário:</h4>
+                    <div style="border: 1px solid #ccc; padding: 10px; margin-top: 10px;">
+                        ${version.calendario}
+                    </div>
+                    <button onclick="restoreVersion(${index})">Restaurar Esta Versão</button>
+                    <button onclick="document.getElementById('version-details').remove()">Fechar</button>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', versionDetails);
+        }
+
+        function restoreVersion(index) {
+            if (confirm('Tem certeza que deseja restaurar esta versão? Todas as alterações não salvas serão perdidas.')) {
+                const version = siteVersions[index];
+                servos = [...version.servos];
+                locais = [...version.locais];
+                calendario.innerHTML = version.calendario;
+                atualizarSelectServos();
+                atualizarSelectLocais();
+                updateEditingState();
+                alert('Versão restaurada com sucesso!');
+                document.getElementById('version-history').remove();
+                if (document.getElementById('version-details')) {
+                    document.getElementById('version-details').remove();
+                }
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', updateEditingState);
+    </script>
+</body></html>
