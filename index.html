@@ -225,6 +225,50 @@
         toggleAdminBtn.addEventListener('click', toggleAdmin);
         versionControlBtn.addEventListener('click', showVersionHistory);
 
+        function saveData() {
+            const data = {
+                servos: servos,
+                locais: locais,
+                calendario: calendario.innerHTML,
+                meses: meses
+            };
+            localStorage.setItem('milcAgendaData', JSON.stringify(data));
+        }
+
+        function loadData() {
+            const savedData = localStorage.getItem('milcAgendaData');
+            if (savedData) {
+                const data = JSON.parse(savedData);
+                servos = data.servos;
+                locais = data.locais;
+                calendario.innerHTML = data.calendario;
+                meses = data.meses;
+                
+                attachEventListeners();
+                
+                atualizarSelectServos();
+                atualizarSelectLocais();
+            }
+        }
+
+        function attachEventListeners() {
+            document.querySelectorAll('.expand-btn').forEach(btn => {
+                btn.addEventListener('click', expandMes);
+            });
+            document.querySelectorAll('.hide-btn').forEach(btn => {
+                btn.addEventListener('click', hideMes);
+            });
+            document.querySelectorAll('.add-missa-btn').forEach(btn => {
+                btn.addEventListener('click', function() { criarEvento.call(this, 'missa'); });
+            });
+            document.querySelectorAll('.add-outro-btn').forEach(btn => {
+                btn.addEventListener('click', function() { criarEvento.call(this, 'outro'); });
+            });
+            document.querySelectorAll('.apagar-mes-btn').forEach(btn => {
+                btn.addEventListener('click', function() { apagarMes(this); });
+            });
+        }
+
         function toggleEditing() {
             if (!editingEnabled) {
                 const password = prompt("Digite a senha para ativar a edição:");
@@ -326,7 +370,7 @@
             servoList.appendChild(servoItem);
             servos.push(nome);
             atualizarSelectServos();
-            saveCurrentVersion();
+            saveData();
         }
 
         function adicionarLocal(nome) {
@@ -342,7 +386,7 @@
             localList.appendChild(localItem);
             locais.push(nome);
             atualizarSelectLocais();
-            saveCurrentVersion();
+            saveData();
         }
 
         function editarServo(button) {
@@ -357,7 +401,7 @@
                     servos[index] = novoNome.trim();
                 }
                 atualizarSelectServos();
-                saveCurrentVersion();
+                saveData();
             }
         }
 
@@ -373,7 +417,7 @@
                     locais[index] = novoNome.trim();
                 }
                 atualizarSelectLocais();
-                saveCurrentVersion();
+                saveData();
             }
         }
 
@@ -392,8 +436,7 @@
                     <p>Local: <select class="local-select"></select></p>
                     <p>Hora: 10:00</p>
                     <div class="botoes">
-                        <button onclick="salvarEvento(this)">Salvar</button>
-                        <button onclick="editarEvento(this)">Editar</button>
+                        <button onclick="editarSalvarEvento(this)">Editar</button>
                         <button onclick="cancelarEvento(this)">Cancelar</button>
                     </div>
                 `;
@@ -407,8 +450,7 @@
                     <p>Evento: <input type="text"></p>
                     <p>Hora: <input type="time"></p>
                     <div class="botoes">
-                        <button onclick="salvarEvento(this)">Salvar</button>
-                        <button onclick="editarEvento(this)">Editar</button>
+                        <button onclick="editarSalvarEvento(this)">Editar</button>
                         <button onclick="cancelarEvento(this)">Cancelar</button>
                     </div>
                 `;
@@ -420,7 +462,7 @@
             eventos.appendChild(evento);
             atualizarSelectServos();
             atualizarSelectLocais();
-            saveCurrentVersion();
+            saveData();
 
             if (eventos.children.length === 3) {
                 const proximoMes = mesElement.nextElementSibling;
@@ -431,70 +473,48 @@
             }
         }
 
-        function editarEvento(button) {
+        function editarSalvarEvento(button) {
             if (!checkPermission('editar')) return;
             const evento = button.closest('.evento');
-            evento.querySelectorAll('p').forEach(p => {
-                if (!p.querySelector('select') && !p.querySelector('button')) {
-                    const texto = p.textContent;
-                    const [chave, valor] = texto.split(': ');
-                    if (chave === 'Local') {
-                        p.innerHTML = `${chave}: <select class="local-select"></select>`;
-                        atualizarSelectLocais();
-                        const select = p.querySelector('select');
-                        select.value = valor;
-                    } else if (chave === 'Servo') {
-                        p.innerHTML = `${chave}: <select class="servo-select"></select>`;
-                        atualizarSelectServos();
-                        const select = p.querySelector('select');
-                        select.value = valor;
-                        select.dispatchEvent(new Event('change'));
-                    } else {
-                        p.innerHTML = `${chave}: <input type="text" value="${valor}">`;
+            if (button.textContent === 'Editar') {
+                evento.querySelectorAll('p').forEach(p => {
+                    if (!p.querySelector('select') && !p.querySelector('button')) {
+                        const texto = p.textContent;
+                        const [chave, valor] = texto.split(': ');
+                        if (chave === 'Local') {
+                            p.innerHTML = `${chave}: <select class="local-select"></select>`;
+                            atualizarSelectLocais();
+                            const select = p.querySelector('select');
+                            select.value = valor;
+                        } else if (chave === 'Servo') {
+                            p.innerHTML = `${chave}: <select class="servo-select"></select>`;
+                            atualizarSelectServos();
+                            const select = p.querySelector('select');
+                            select.value = valor;
+                            select.dispatchEvent(new Event('change'));
+                        } else {
+                            p.innerHTML = `${chave}: <input type="text" value="${valor}">`;
+                        }
                     }
-                }
-            });
-            button.textContent = 'Salvar';
-            button.onclick = () => salvarEvento(button);
-        }
-
-        function adicionarNovoServo(button) {
-            if (!checkPermission('adicionar')) return;
-            const evento = button.closest('.evento');
-            const novoServoP = document.createElement('p');
-            novoServoP.innerHTML = `
-                Servo: <select class="servo-select"></select>
-                <button onclick="cancelarNovoServo(this)">Cancelar</button>
-            `;
-            button.parentNode.insertAdjacentElement('beforebegin', novoServoP);
-            atualizarSelectServos();
-        }
-
-        function cancelarNovoServo(button) {
-            if (!checkPermission('cancelar')) return;
-            const servoP = button.closest('p');
-            servoP.remove();
-        }
-
-        function salvarEvento(button) {
-            if (!checkPermission('salvar')) return;
-            const evento = button.closest('.evento');
-            let isPendente = false;
-            evento.querySelectorAll('input, select').forEach(input => {
-                const p = input.parentNode;
-                p.textContent = `${p.textContent.split(':')[0]}: ${input.value}`;
-                if (input.classList.contains('servo-select') && input.value === 'PENDENTE') {
-                    isPendente = true;
-                }
-            });
-            if (isPendente) {
-                evento.classList.add('pendente');
+                });
+                button.textContent = 'Salvar';
             } else {
-                evento.classList.remove('pendente');
+                let isPendente = false;
+                evento.querySelectorAll('input, select').forEach(input => {
+                    const p = input.parentNode;
+                    p.textContent = `${p.textContent.split(':')[0]}: ${input.value}`;
+                    if (input.classList.contains('servo-select') && input.value === 'PENDENTE') {
+                        isPendente = true;
+                    }
+                });
+                if (isPendente) {
+                    evento.classList.add('pendente');
+                } else {
+                    evento.classList.remove('pendente');
+                }
+                button.textContent = 'Editar';
+                saveData();
             }
-            button.textContent = 'Editar';
-            button.onclick = () => editarEvento(button);
-            saveCurrentVersion();
         }
 
         function criarMes(mes) {
@@ -583,7 +603,7 @@
             if (!checkPermission('cancelar')) return;
             const evento = button.closest('.evento');
             evento.remove();
-            saveCurrentVersion();
+            saveData();
         }
 
         function adicionarNovoMes() {
@@ -607,22 +627,8 @@
 
             const mesElement = criarMes(novoMesCompleto);
             calendario.appendChild(mesElement);
-            saveCurrentVersion();
+            saveData();
             updateEditingState();
-        }
-
-        function saveCurrentVersion() {
-            const currentState = {
-                servos: [...servos],
-                locais: [...locais],
-                calendario: calendario.innerHTML,
-                timestamp: new Date().toLocaleString()
-            };
-            siteVersions.unshift(currentState);
-            if (siteVersions.length > MAX_VERSIONS) {
-                siteVersions.pop();
-            }
-            localStorage.setItem('siteVersions', JSON.stringify(siteVersions));
         }
 
         function showVersionHistory() {
@@ -682,6 +688,9 @@
             }
         }
 
-        document.addEventListener('DOMContentLoaded', updateEditingState);
+        document.addEventListener('DOMContentLoaded', function() {
+            loadData();
+            updateEditingState();
+        });
     </script>
 </body></html>
